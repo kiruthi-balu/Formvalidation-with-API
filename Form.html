@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration</title>
+    <style>
+        form { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        label { display: block; margin: 10px 0; }
+        p.error { color: red; font-size: 0.9em; margin-top: -10px; }
+    </style>
+</head>
+<body>
+    <h1>User Registration</h1>
+    <form id="userForm">
+        <label>
+            First Name: 
+            <input type="text" id="firstName">
+        </label>
+        <p class="error" id="firstNameError"></p>
+
+        <label>
+            Last Name: 
+            <input type="text" id="lastName">
+        </label>
+        <p class="error" id="lastNameError"></p>
+
+        <label>
+            Age: 
+            <input type="number" id="age">
+        </label>
+        <p class="error" id="ageError"></p>
+
+        <label>
+            Gender:
+            <select id="gender">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </label>
+        <p class="error" id="genderError"></p>
+
+        <label>
+            Email: 
+            <input type="email" id="email">
+        </label>
+        <p class="error" id="emailError"></p>
+
+        <label>
+            Phone Number: 
+            <input type="text" id="phone">
+        </label>
+        <p class="error" id="phoneError"></p>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <h2>Users</h2>
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Email</th>
+                <th>Phone</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const form = document.getElementById('userForm');
+        const userTable = document.getElementById('userTable').querySelector('tbody');
+
+        const API_URL = 'http://localhost:3000/api/users';
+
+        function showError(id, message) {
+            document.getElementById(id).textContent = message;
+        }
+
+        function clearErrors() {
+            ['firstNameError', 'lastNameError', 'ageError', 'genderError', 'emailError', 'phoneError']
+                .forEach(id => showError(id, ''));
+        }
+
+        function validateForm(data) {
+            let isValid = true;
+
+            if (!data.firstName) {
+                showError('firstNameError', 'First Name is required.');
+                isValid = false;
+            }
+
+            if (!data.lastName) {
+                showError('lastNameError', 'Last Name is required.');
+                isValid = false;
+            }
+
+            if (!data.age || data.age <= 0) {
+                showError('ageError', 'Age must be a positive number.');
+                isValid = false;
+            }
+
+            if (!data.gender) {
+                showError('genderError', 'Gender is required.');
+                isValid = false;
+            }
+
+            if (!data.email || !/\S+@\S+\.\S+/.test(data.email)) {
+                showError('emailError', 'Enter a valid email.');
+                isValid = false;
+            }
+
+            if (!data.phone || !/^\d{10}$/.test(data.phone)) {
+                showError('phoneError', 'Phone Number must be a 10-digit number.');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        async function fetchUsers() {
+            const response = await fetch(API_URL);
+            const users = await response.json();
+            userTable.innerHTML = '';
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.firstName}</td>
+                    <td>${user.lastName}</td>
+                    <td>${user.age}</td>
+                    <td>${user.gender}</td>
+                    <td>${user.email}</td>
+                    <td>${user.phone}</td>
+                `;
+                userTable.appendChild(row);
+            });
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            clearErrors();
+
+            const userData = {
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                age: parseInt(document.getElementById('age').value.trim(), 10),
+                gender: document.getElementById('gender').value,
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+            };
+
+            if (!validateForm(userData)) {
+                return;
+            }
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData),
+            });
+
+            if (response.ok) {
+                form.reset();
+                fetchUsers();
+            } else {
+                alert('Failed to add user. Please try again.');
+            }
+        });
+
+        fetchUsers();
+    </script>
+</body>
+</html>
